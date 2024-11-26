@@ -11,24 +11,45 @@ void got_packet(u_char *args, const struct pcap_pkthdr *header, const u_char *pa
 
 int main()
 {
-	pcap_t *handle;
+	pcap_t *handle; // Session handle
 	char errbuf[PCAP_ERRBUF_SIZE];
-	struct bpf_program fp;
+	struct bpf_program fp; // Berkeley Packet Filter
 	char filter_exp[] = "udp";
 	bpf_u_int32 net;
 
 	// Step 1: Open live PCAP session handle on NIC using your interface name
 	// TODO
+	char interface[] = "br-abe6de220b23";
+	handle = pcap_open_live(interface, BUFSIZ, 1, 1000, errbuf); // interface, snaplen, promiscuous, to_ms, errbuf
+	if (handle == NULL) {
+		fprintf(stderr, "Couldn't open device %s: %s\n", interface, errbuf);
+		return 2;
+	}
+
 
 	// Step 2: Compile filter_exp into BPF pseudo-code
 	// TODO
+	// convert the filter expression into a BPF filter
+	if (pcap_compile(handle, &fp, filter_exp, 0, net) == -1) { // handle, fp, filter_exp, optimize, netmask
+		fprintf(stderr, "Couldn't parse filter %s: %s\n", filter_exp, pcap_geterr(handle));
+		return 2;
+	}
+
+	// ensures to filter only UDP packets
+	if (pcap_setfilter(handle, &fp) == -1) { // handle, fp
+		fprintf(stderr, "Couldn't install filter %s: %s\n", filter_exp, pcap_geterr(handle));
+		return 2;
+	}
 
 	// Step 3: Capture packets
 	printf("Sniffing...\n");
 	// TODO
+	// start a loop that processes packets from the network
+	pcap_loop(handle, 0, got_packet, NULL); // handle, num_packets, callback, user
 
 	// Close the PCAP session handle
 	// TODO
+	pcap_close(handle);
 
 	return 0;
 }
